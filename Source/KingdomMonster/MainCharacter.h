@@ -11,6 +11,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContetxt;
 class UInputAction;
+class AWeapon;
+class UAnimMontage;
 
 
 UENUM(BlueprintType)
@@ -32,6 +34,9 @@ public:
 	AMainCharacter();
 
 	virtual void Jump() override;
+	virtual void Sprint();
+	virtual void Run();
+	virtual void Attack();
 
 protected:
 	// Called when the game starts or when spawned
@@ -49,6 +54,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 		class UInputAction* JumpAction; 
+
+	UPROPERTY(EditAnywhere, Category = Input)
+		class UInputAction* SprintAction;
+
+
+	UPROPERTY(EditAnywhere, Category = Input)
+		class UInputAction* CombatAction;
 
 
 
@@ -80,7 +92,30 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		bool IsAlive = true;
+	//
 
+	UPROPERTY(BlueprintReadOnly)
+		AWeapon* EquippedWeapon;
+	
+	UPROPERTY(BlueprintReadOnly)
+		float MovementSpeed;
+
+	UPROPERTY(BlueprintReadOnly)
+		bool bInAir;
+
+	UPROPERTY(EditAnywhere)
+		class UAnimMontage* CombatMontage;
+
+
+	void SetMovementSpeedAndAir();
+
+	void EquipWeapon(AWeapon* WeaponActor);
+
+	
+
+	// speed control
+	float RunningSpeed = 600.f;
+	float SprintingSpeed = 950.f;
 
 
 };

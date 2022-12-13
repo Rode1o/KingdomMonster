@@ -8,7 +8,7 @@
 #include "Animation/AnimInstance.h"
 #include "Components/InputComponent.h"
 #include "GameFrameWork/PlayerController.h"
-//#include "Weapon.h"
+#include "Weapon.h"
 //#include "Enemy.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/BoxComponent.h"
@@ -45,19 +45,70 @@ AMainCharacter::AMainCharacter()
 	GetCharacterMovement()->JumpZVelocity = 550.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 
+}
 
-
+void AMainCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	SetMovementSpeedAndAir();
 
 }
 
 void AMainCharacter::Jump()
 {
 
-	//if (!IsAlive)
-		//return;
-	//if (bIsAttacking)
-		//return;
+	if (!IsAlive)
+		return;
+	if (bIsAttacking)
+		return;
 	Super::Jump();
+}
+
+void AMainCharacter::Sprint()
+{
+
+	if (!IsAlive)
+		return;
+	if (GetCharacterMovement()->Velocity.Size() == 0)
+		return;
+
+	MovementState = EMovementState::MS_Sprinting;
+	GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+
+}
+
+void AMainCharacter::Run()
+{
+	if (!IsAlive)
+		return;
+	if (GetCharacterMovement()->Velocity.Size() == 0)
+		return;
+
+	MovementState = EMovementState::MS_Normal;
+	GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
+}
+
+void AMainCharacter::Attack()
+{
+	if (!IsAlive)
+		return;
+	if (EquippedWeapon) {
+
+		UAnimInstance* MyAnim = GetMesh()->GetAnimInstance();
+		if (MyAnim && CombatMontage) {
+			MyAnim->Montage_Play(CombatMontage, 2.5f);
+			
+			float RandAnim = FMath::RandRange(0, 1);
+
+			if (RandAnim > 0) {
+				MyAnim->Montage_JumpToSection(TEXT("Attack_1"));
+			}
+			else {
+				MyAnim->Montage_JumpToSection(TEXT("Attack_2"));
+			}
+		}
+	}
+
 }
 
 // Called when the game starts or when spawned
@@ -104,11 +155,7 @@ void AMainCharacter::Look(const FInputActionValue& value)
 }
 
 // Called every frame
-void AMainCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-}
 
 // Called to bind functionality to input
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -120,7 +167,37 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(MovementAction, ETriggerEvent::Triggered, this, &AMainCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMainCharacter::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AMainCharacter::Jump);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMainCharacter::Sprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AMainCharacter::Run);
+		EnhancedInputComponent->BindAction(CombatAction, ETriggerEvent::Completed, this, &AMainCharacter::Attack);
 	}
+
+
+
+}
+
+void AMainCharacter::SetMovementSpeedAndAir()
+{
+	auto CharSpeed = GetVelocity();
+	auto LateralSpeed = FVector(CharSpeed.X, CharSpeed.Y, 0.0f);
+
+	MovementSpeed = LateralSpeed.Size();
+
+	bInAir = GetMovementComponent()->IsFalling();
+}
+
+void AMainCharacter::EquipWeapon(AWeapon* WeaponActor)
+{
+
+	if (EquippedWeapon != nullptr)
+		return;
+
+	WeaponActor->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("RightHandSocket"));
+	WeaponActor->Used = true;
+	EquippedWeapon = WeaponActor;
+
+	// add overlap for hitbox
+
 
 
 
