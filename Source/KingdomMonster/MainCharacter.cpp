@@ -9,7 +9,7 @@
 #include "Components/InputComponent.h"
 #include "GameFrameWork/PlayerController.h"
 #include "Weapon.h"
-//#include "Enemy.h"
+#include "Enemy.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -106,6 +106,8 @@ void AMainCharacter::Attack()
 			else {
 				MyAnim->Montage_JumpToSection(TEXT("Attack_2"));
 			}
+
+			CanDetectDamageCollision = true;
 		}
 	}
 
@@ -169,7 +171,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AMainCharacter::Jump);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMainCharacter::Sprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AMainCharacter::Run);
-		EnhancedInputComponent->BindAction(CombatAction, ETriggerEvent::Completed, this, &AMainCharacter::Attack);
+		EnhancedInputComponent->BindAction(CombatAction, ETriggerEvent::Started, this, &AMainCharacter::Attack);
 	}
 
 
@@ -198,8 +200,56 @@ void AMainCharacter::EquipWeapon(AWeapon* WeaponActor)
 
 	// add overlap for hitbox
 
-
+	EquippedWeapon->AttackHitbox->OnComponentBeginOverlap.AddDynamic(this, &AMainCharacter::DamageBoxDetectOnOverlapBegin);
 
 
 }
 
+void AMainCharacter::ApplyDamage()
+{
+	if (!IsAlive)
+		return;
+
+	Health -= 10.f;
+
+	if (Health <= 0.f) {
+
+		IsAlive = false;
+		FTimerHandle TimerHandle;
+		GetWorldTimerManager().SetTimer(TimerHandle, this, &AMainCharacter::RestartGame, 3.f);
+
+
+	}
+
+}
+
+void AMainCharacter::RestartGame()
+{
+
+	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()), false);
+
+}
+
+
+
+
+void AMainCharacter::DamageBoxDetectOnOverlapBegin(UPrimitiveComponent* OverlappedActor, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bSweepFrom, const FHitResult& SweepResults)
+{
+
+
+	if (CanDetectDamageCollision) {
+
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+
+		if (Enemy) {
+			CanDetectDamageCollision = false;
+
+			Enemy->ApplyDamage();
+		}
+
+
+	}
+
+
+
+}

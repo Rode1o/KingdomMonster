@@ -105,8 +105,21 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		class UAnimMontage* CombatMontage;
+	UFUNCTION()
+		virtual void DamageBoxDetectOnOverlapBegin(UPrimitiveComponent* OverlappedActor, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bSweepFrom, const FHitResult& SweepResults);
+
+	
+	UPROPERTY(BlueprintReadWrite)
+		bool CanDetectDamageCollision;
 
 
+	UPROPERTY(BlueprintReadWrite)
+		float Health = 100.f; 
+
+	void ApplyDamage();
+	void RestartGame();
+
+	
 	void SetMovementSpeedAndAir();
 
 	void EquipWeapon(AWeapon* WeaponActor);
